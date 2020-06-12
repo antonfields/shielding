@@ -1,0 +1,256 @@
+---
+title: "Shielding"
+output:
+  html_notebook: default
+  html_document:
+    df_print: paged
+  word_document: default
+  pdf_document: default
+---
+
+### Introduction
+Clinically extremely vulnerable patients have been advised to shield during the coronavirus pandemic. Idenfication of these patients has been undertaken by NHS England, hospital trusts and GP practices.
+
+
+
+### Getting the data
+Shielding data was published by NHS Digital and was available to download as an Excel spreadsheet. This is been saved as a csv file which is imported to undertake this analysis.
+
+First section of code loads in some packages and then imports the data
+
+```{r message = FALSE}
+library(tidyverse)
+library(ggrepel)
+library(ggthemes)
+library(grid)
+library(gridExtra)
+
+# Importing the datasets from csv files
+SPL_2020_05_15 <- read_csv("/Users/Anton/Documents/Coding/R/Shielding_files/SPL-2020-05-15.csv")
+X2018PopAll <- read_csv("/Users/Anton/Documents/Coding/R/Shielding_files/2018PopAll.csv")
+lasregionew2019 <- read_csv("/Users/Anton/Documents/Coding/R/Shielding_files/lasregionew2019.csv")
+
+```
+
+### Data handling
+Unhelpfully the age groups in the population data don't match the shielding data age groups. Frustratingly the shielding data ages 0-18 and 19-69 cannot be matched with the population data that includes a 14-19 age group. So two age groups have been created: <70 and 70+. The data has been combined to form a single data set for the analysis.
+
+The combined data for Warrington looks like this:
+
+```{r}
+# manipulating the data
+
+# creating a vector containing age groups to classify together so SPL and Population data can be brought into one data frame
+age_cat <- c("0-4", "5-9", "10-14", "15-19", "20-24", "25-29", "30-34", "35-39", "40-44", "45-49", "50-54", "55-59", "60-64", "65-69")
+
+population_2021 <-
+  X2018PopAll %>%
+  mutate('AGE GROUP' = ifelse(`AGE GROUP` %in% age_cat,"<70",ifelse(`AGE GROUP` == "All ages", "All", "70+"))) %>%
+  group_by(AREA, `AGE GROUP`) %>%
+  summarise(population = sum(`2021`)) %>%
+  ungroup()
+
+shielding_data <-
+  SPL_2020_05_15 %>%
+  filter(`Breakdown Field` != "Gender") %>%
+  mutate(`Breakdown Value` = ifelse(`Breakdown Value` == "ALL", "All", ifelse(`Breakdown Value` == "70+", "70+", "<70"))) %>%
+  group_by(`LA Name`, `Breakdown Value`) %>%
+  summarise(shielding = sum(`Patient Count`)) %>%
+  ungroup()
+
+# bringing the data sets together
+combined_data <-
+  left_join(population_2021, shielding_data, by = c("AREA" = "LA Name", "AGE GROUP" = "Breakdown Value")) %>%
+  left_join(lasregionew2019, by = c("AREA" = "LA name")) %>%
+  mutate(shielding_rate = shielding / population * 1000) %>%
+  drop_na() %>%
+  rename("area" = "AREA", "age" = "AGE GROUP", "region" = "Region name") %>%
+  select(area, region, age, population, shielding, shielding_rate)
+
+combined_data %>% filter(area == "Warrington") %>% head()
+```
+
+The shielding rate column is a calculated column that represents the number of shielding patients per 1,000 population.
+
+There are some other local authorities nearby that are interesting comparators, so a group is created that allows them to be highlighted when approprate.
+
+```{r}
+# Define a group so we can highlight Warrinton and others  
+local_comparators <- c("Warrington",
+                 "Liverpool",
+                 "Wigan",
+                 "St. Helens",
+                 "Cheshire West and Chester",
+                 "Cheshire East",
+                 "Wirral",
+                 "Knowsley",
+                 "Sefton",
+                 "Halton",
+                 "Stockport",
+                 "Salford",
+                 "Manchester")
+local_comparators
+```
+
+### Analysis
+First question: what do the overall numbers look like?
+
+```{r}
+combined_data %>%
+  filter(age == "All") %>%
+  summarise(total_population = sum(population), total_shielding = sum(shielding), shielding_percentage = total_shielding / total_population *100)
+```
+
+Broken down by age group:
+```{r}
+combined_data %>%
+  filter(age != "All") %>%
+  group_by(age) %>%
+  summarise(total_population = sum(population), total_shielding = sum(shielding), shielding_percentage = total_shielding / total_population *100)
+```
+
+
+
+
+### How do shielding numbers relate to the overall population?
+To answer this question, we look at a scatter plot. It is clear from this that there is a strong correlation between population and shielding patients as expected.
+
+```{r}
+combined_data %>%
+  filter(age == "All") %>%
+  ggplot(aes(population, shielding)) +
+  geom_point()
+```
+
+Given the fact that most points are clustered in the bottom left hand corner of this plot, log scales on both axes may help with viewing this data.
+
+```{r}
+combined_data %>%
+  filter(age == "All") %>%
+  ggplot(aes(population, shielding)) +
+  geom_point() +
+  scale_x_continuous(trans = "log10") +
+  scale_y_continuous(trans = "log10")
+
+
+```
+
+Now tidying this up, adding a trend line and highlighting local comparators, it is clear that some Merseyside authorities have higher proportions of shielding patients.
+
+```{r, fig.width = 9}
+# Overall population vs shielding
+highlight_df <-
+  combined_data %>%
+  filter(area %in% local_comparators, age == "All")
+
+scatter_plot_psall <-
+  combined_data %>%
+  filter(age == "All") %>%
+  ggplot(aes(population, shielding)) +
+  geom_smooth(method="lm") +
+  geom_point(size = 2, alpha = 0.5) +
+  geom_point(data = highlight_df, color = "red", alpha = 1) +
+  geom_text_repel(data = highlight_df,aes(label = area), nudge_x = 0.07) +
+  scale_x_continuous(trans = "log10") +
+  scale_y_continuous(trans = "log10") +
+  xlab("Population (log scale)") +
+  ylab("Shielding patients (log scale)") +
+  ggtitle("Coronavirus shielding patients (All ages)") +
+  scale_color_colorblind() +
+  labs(caption = "Population is the ONS 2021 estimate (2018 based) \n Shielding patients numbers are as at 15 May 2020 from NHS Digital")
+
+scatter_plot_psall
+```
+
+### How do the age groups compare?
+Having a look at how the age groups compare, a much higher proportion of those aged 70 or over are shielding.
+
+```{r, fig.width = 9}
+# Comparing age groups, with density shown
+
+density_plot_srage <- 
+  combined_data %>%
+  filter(age != "All") %>%
+  ggplot(aes(shielding_rate, y = ..count.., fill = age)) +
+  geom_density() +
+  xlab("Shielding patients per 1,000 population") +
+  ylab("Population Density") +
+  ggtitle("Coronavirus shielding patient density (by age group)") +
+  theme(legend.position = "none") +
+  facet_grid(age~.) +
+  scale_color_colorblind() +
+  scale_fill_colorblind(name = "Key")
+
+density_plot_srage
+```
+
+
+### Looking at age group by region
+Just really to demonstrate some of the flexibility with R. Very similar code to the plot above, with a couple of tweaks only.
+```{r, fig.width = 9}
+# Comparing age groups, with density shown
+
+density_plot_srage <- 
+  combined_data %>%
+  mutate(region = reorder(region, shielding_rate, FUN = median)) %>%
+  filter(age != "All") %>%
+  ggplot(aes(shielding_rate, y = ..count.., fill = age)) +
+  geom_density() +
+  xlab("Shielding patients per 1,000 population") +
+  ylab("Population Density") +
+  ggtitle("Coronavirus shielding patient density (by regions & age group)") +
+  theme(legend.position = "none") +
+  facet_grid(region~age) +
+  theme(strip.text.y = element_text(angle = 0)) +
+  scale_color_colorblind() +
+  scale_fill_colorblind(name = "Key")
+
+density_plot_srage
+```
+
+
+
+### How do the regions compare?
+There appears to be a geographical trend in terms of the average shielding rates compared across the regions. Further work would be needed to explore how this compared to general health trends, or other health related variables such as indeces of multiple deprivation. 
+
+```{r, fig.width = 9}
+box_plot_reg <- 
+  combined_data %>%
+  filter(age == 'All') %>%
+  mutate(region = reorder(region, shielding_rate, FUN = median)) %>%
+  ggplot(aes(region, shielding_rate, fill = region, alpha = 0.2)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.1, alpha = 0.5) +
+  xlab("Region") +
+  ylab("Shielding Rate") +
+  ggtitle("Coronavirus Shielding Patients (Regions)") +
+  guides(alpha = "none") +
+  theme(legend.position = "none") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+box_plot_reg
+```
+
+### Focusing on the north west
+The following tables show the shielding rate for all North West authorities:
+
+```{r}
+combined_data %>% 
+  filter(age == "All", region == "North West") %>%
+  arrange(desc(shielding_rate))
+```
+All ages
+```{r}
+combined_data %>% 
+  filter(age == "70+", region == "North West") %>%
+  arrange(desc(shielding_rate))
+```
+Aged 70 or over
+```{r}
+combined_data %>% 
+  filter(age == "<70", region == "North West") %>%
+  arrange(desc(shielding_rate))
+```
+Aged under 70
+
+
