@@ -7,9 +7,9 @@ library(gridExtra)
 ds_theme_set()
 
 # Importing the datasets from csv files
-SPL_2020_05_15 <- read_csv("/Users/Anton/Documents/Coding/R/HarvardX-R-Visualisation/SPL-2020-05-15.csv")
-X2018PopAll <- read_csv("/Users/Anton/Documents/Coding/R/HarvardX-R-Visualisation/2018PopAll.csv")
-lasregionew2019 <- read_csv("/Users/Anton/Documents/Coding/R/HarvardX-R-Visualisation/lasregionew2019.csv")
+SPL_2020_05_15 <- read_csv("data/SPL-2020-05-15.csv")
+X2018PopAll <- read_csv("data/2018PopAll.csv")
+lasregionew2019 <- read_csv("data/lasregionew2019.csv")
 
 # manipulating the data
 
@@ -78,6 +78,7 @@ scatter_plot_psall <-
   labs(caption = "Population is the ONS 2021 estimate (2018 based) \n Shielding patients numbers are as at 15 May 2020 from NHS Digital")
 
 scatter_plot_psall
+ggsave("figs/scatter_plot.png")
 
 # Comparing age groups, with density also shown
 highlight_df <-
@@ -116,7 +117,7 @@ density_plot_srage <-
   scale_fill_colorblind(name = "Key")
 
 grid.arrange(scatter_plot_psage, density_plot_srage, ncol = 1, nrow = 2, heights = c(2/3, 1/3))
-
+ggsave("figs/age_plots.png")
 
 # Looking at regional variation & geographical trends
 box_plot_regall <- 
