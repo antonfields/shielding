@@ -2,7 +2,7 @@ library(tidyverse)
 library(dslabs)
 library(ggrepel)
 library(ggthemes)
-library(grid)
+# library(grid)  # Don't think this is needed
 library(gridExtra)
 ds_theme_set()
 
