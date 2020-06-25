@@ -3,6 +3,7 @@ title: "Shielding"
 output:
   html_document:
     df_print: paged
+    code_folding: hide
   html_notebook: default
   word_document: default
   pdf_document: default
@@ -37,7 +38,7 @@ Unhelpfully the age groups in the population data don't match the shielding data
 
 The combined data for Warrington looks like this:
 
-```{r}
+```{r message = FALSE}
 # manipulating the data
 
 # creating a vector containing age groups to classify together so SPL and Population data can be brought into one data frame
@@ -102,7 +103,7 @@ combined_data %>%
 ```
 
 Broken down by age group:
-```{r}
+```{r message = FALSE}
 combined_data %>%
   filter(age != "All") %>%
   group_by(age) %>%
@@ -252,5 +253,4 @@ combined_data %>%
   arrange(desc(shielding_rate))
 ```
 Aged under 70
-
 
