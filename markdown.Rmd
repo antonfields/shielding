@@ -4,7 +4,12 @@ output:
   html_document:
     df_print: paged
     code_folding: hide
-  html_notebook: default
+    toc: TRUE
+    toc_float: TRUE
+  html_notebook:
+    code_folding: hide
+    toc: TRUE
+    toc_float: TRUE
   word_document: default
   pdf_document: default
 ---
@@ -19,12 +24,13 @@ Shielding data was published by NHS Digital and was available to download as an 
 
 First section of code loads in some packages and then imports the data
 
-```{r message = FALSE}
-library(tidyverse)
+```{r message=FALSE, warning=FALSE}
+
 library(ggrepel)
 library(ggthemes)
 library(grid)
 library(gridExtra)
+library(tidyverse)
 
 # Importing the datasets from csv files
 SPL_2020_05_15 <- read_csv("data/SPL-2020-05-15.csv")
@@ -38,7 +44,7 @@ Unhelpfully the age groups in the population data don't match the shielding data
 
 The combined data for Warrington looks like this:
 
-```{r message = FALSE}
+```{r message=FALSE, warning=FALSE}
 # manipulating the data
 
 # creating a vector containing age groups to classify together so SPL and Population data can be brought into one data frame
@@ -138,7 +144,7 @@ combined_data %>%
 
 Now tidying this up, adding a trend line and highlighting local comparators, it is clear that some Merseyside authorities have higher proportions of shielding patients.
 
-```{r, fig.width = 9}
+```{r fig.width=7, message=FALSE, warning=FALSE}
 # Overall population vs shielding
 highlight_df <-
   combined_data %>%
@@ -166,7 +172,7 @@ scatter_plot_psall
 ### How do the age groups compare?
 Having a look at how the age groups compare, a much higher proportion of those aged 70 or over are shielding.
 
-```{r, fig.width = 9}
+```{r fig.width=7, message=FALSE, warning=FALSE}
 # Comparing age groups, with density shown
 
 density_plot_srage <- 
@@ -188,7 +194,7 @@ density_plot_srage
 
 ### Looking at age group by region
 Just really to demonstrate some of the flexibility with R. Very similar code to the plot above, with a couple of tweaks only.
-```{r, fig.width = 9}
+```{r fig.width=7, message=FALSE, warning=FALSE}
 # Comparing age groups, with density shown
 
 density_plot_srage <- 
@@ -214,7 +220,7 @@ density_plot_srage
 ### How do the regions compare?
 There appears to be a geographical trend in terms of the average shielding rates compared across the regions. Further work would be needed to explore how this compared to general health trends, or other health related variables such as indeces of multiple deprivation. 
 
-```{r, fig.width = 9}
+```{r fig.width=7, message=FALSE, warning=FALSE}
 box_plot_reg <- 
   combined_data %>%
   filter(age == 'All') %>%
