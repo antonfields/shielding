@@ -2,10 +2,10 @@
 title: "Shielding"
 output:
   html_document:
-    df_print: paged
     code_folding: hide
     toc: TRUE
     toc_float: TRUE
+    df_print: paged
   html_notebook:
     code_folding: hide
     toc: TRUE
@@ -259,4 +259,3 @@ combined_data %>%
   arrange(desc(shielding_rate))
 ```
 Aged under 70
-
