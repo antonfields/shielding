@@ -4,6 +4,7 @@ library(ggrepel)
 library(ggthemes)
 # library(grid)  # Don't think this is needed
 library(gridExtra)
+library(svglite)
 ds_theme_set()
 
 # Importing the datasets from csv files
@@ -79,6 +80,7 @@ scatter_plot_psall <-
 
 scatter_plot_psall
 ggsave("figs/scatter_plot.png")
+ggsave("figs/scatter_plot.svg")
 
 # Comparing age groups, with density also shown
 highlight_df <-
@@ -118,6 +120,7 @@ density_plot_srage <-
 
 grid.arrange(scatter_plot_psage, density_plot_srage, ncol = 1, nrow = 2, heights = c(2/3, 1/3))
 ggsave("figs/age_plots.png")
+ggsave("figs/age_plots.svg")
 
 # Looking at regional variation & geographical trends
 box_plot_regall <- 
@@ -167,7 +170,7 @@ table_for_display_2 <-
             highest = max(shielding_rate),
             mean = mean(shielding_rate),
             standard_deviation = sd(shielding_rate))
-            
+
 
 table_for_display_1
 table_for_display_2
@@ -177,4 +180,4 @@ cor_data <- combined_data %>% filter(age == "All")
 cor(cor_data$population, cor_data$shielding, method = "spearman")
 cor(cor_data$population, cor_data$shielding_rate, method = "spearman")
 
-
+htmlSVG("figs/scatter_plot.svg")
